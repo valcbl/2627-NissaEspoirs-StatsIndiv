@@ -16,8 +16,7 @@ Page staff des statistiques individuelles : rapports de match, saison, comparais
 ## Première configuration (une seule fois)
 
 1. Ouvre la page, clique sur **Connexion** et choisis un mot de passe administrateur (6 caractères minimum).
-2. Va dans « Comparer deux joueurs » et définis le code d'accès de la fiche en bas de la page.
-3. Clique sur **Télécharger donnees.json**, puis remplace `donnees.json` dans le dépôt (Add file → Upload files → Commit changes).
+2. Clique sur **Télécharger donnees.json**, puis remplace `donnees.json` dans le dépôt (Add file → Upload files → Commit changes).
 
 ## Ajouter un match
 
@@ -25,10 +24,15 @@ Page staff des statistiques individuelles : rapports de match, saison, comparais
 2. **Importer un match** et dépose le fichier XML ou CSV.
 3. **Télécharger donnees.json** puis remplace-le dans le dépôt.
 
+## Temps de jeu
+
+Menu « Temps de jeu & tâches » : en mode administrateur, saisis les minutes de chaque joueur (J1 à J18, 1/4, 1/2, finale). Le formulaire en bas de page permet d'ajouter un joueur à l'effectif (nom, prénom, année, poste). Comme pour les matchs, télécharge ensuite `donnees.json` et remplace-le dans le dépôt.
+
 ## Qui voit quoi
 
-- Visiteurs : rapports, vue saison, et fiche comparaison seulement avec le code. Pas d'import ni d'export PDF.
-- Administrateur : tout, y compris l'import, l'export PDF et le changement de code.
+- Tout le monde (administrateur compris) : « Comparer deux joueurs » et « Temps de jeu & tâches » demandent le mot de passe à chaque ouverture de la page.
+- Visiteurs : rapports et vue saison. Pas d'import ni d'export PDF.
+- Administrateur : en plus, l'import et l'export PDF.
 - Sur n'importe quel ordinateur ou téléphone : **Connexion** puis le mot de passe. L'appareil reste connecté jusqu'à **Déconnexion**.
 
 ## Bon à savoir
