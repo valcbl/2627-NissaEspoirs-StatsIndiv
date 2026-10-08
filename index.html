@@ -295,10 +295,10 @@ footer{border-top:1px solid var(--line);padding-top:10px}
   function adminScreen(){
     const has=!!adminHash();
     const ov=document.createElement('div'); ov.className='export-ov';
-    ov.innerHTML=`<form id="admForm" class="card" style="max-width:420px;width:calc(100% - 32px);display:flex;flex-direction:column;gap:12px"><h3 style="margin:0">${has?'Mode administrateur':'Créer le mot de passe administrateur'}</h3><p class="sub" style="margin:0">${has?'Entre le mot de passe pour importer des matchs, exporter en PDF et gérer le code de la fiche comparaison.':'Choisis un mot de passe (6 caractères minimum). Il faudra ensuite télécharger donnees.json et le déposer sur GitHub pour qu’il soit actif partout.'}</p><input type="password" id="admPwd" autocomplete="off" required minlength="6" style="font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px"><p class="msg" id="admMsg"></p><div style="display:flex;gap:8px"><button type="submit">${has?'Se connecter':'Créer'}</button><button type="button" class="ghost" id="admCancel">Annuler</button></div></form>`;
+    ov.innerHTML=`<form id="admForm" class="card" style="max-width:420px;width:calc(100% - 32px);display:flex;flex-direction:column;gap:12px"><h3 style="margin:0">${has?'Connexion administrateur':'Créer le mot de passe administrateur'}</h3><p class="sub" style="margin:0">${has?'Entre le mot de passe pour importer des matchs, exporter en PDF et gérer le code de la fiche comparaison.':'Choisis un mot de passe (6 caractères minimum). Il faudra ensuite télécharger donnees.json et le déposer sur GitHub pour qu’il soit actif partout.'}</p><input type="password" id="admPwd" autocomplete="off" required minlength="6" style="font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px"><p class="msg" id="admMsg"></p><div style="display:flex;gap:8px"><button type="submit">${has?'Se connecter':'Créer'}</button><button type="button" class="ghost" id="admCancel">Annuler</button></div></form>`;
     document.body.appendChild(ov);
     const leave=()=>{ history.replaceState(null,'',location.pathname+location.search); location.reload(); };
-    ov.querySelector('#admCancel').addEventListener('click',leave);
+    ov.querySelector('#admCancel').addEventListener('click',()=>{ if(location.hash==='#admin') leave(); else ov.remove(); });
     ov.querySelector('#admForm').addEventListener('submit',async e=>{ e.preventDefault(); const v=ov.querySelector('#admPwd').value; const m=ov.querySelector('#admMsg');
       if(v.length<6){ m.className='msg err'; m.textContent='6 caractères minimum.'; return; }
       const h=await sha('nissa-admin:'+v);
@@ -312,7 +312,12 @@ footer{border-top:1px solid var(--line);padding-top:10px}
     await ready;
     if(location.hash==='#admin'){ adminScreen(); }
     if(location.hash==='#lecteur'){ try{ localStorage.removeItem(ADMIN_KEY); }catch(e){} history.replaceState(null,'',location.pathname+location.search); }
-    const right=document.querySelector('.bar-tools .right'); if(!right||!isAdmin()) return;
+    const right=document.querySelector('.bar-tools .right'); if(!right) return;
+    const lg=document.createElement('button'); lg.type='button'; lg.className='ghost'; lg.id='btnLogin';
+    if(isAdmin()){ lg.textContent='Déconnexion'; lg.addEventListener('click',()=>{ try{ localStorage.removeItem(ADMIN_KEY); }catch(e){} location.reload(); }); }
+    else { lg.textContent='Connexion'; lg.addEventListener('click',()=>adminScreen()); }
+    right.appendChild(lg);
+    if(!isAdmin()) return;
     const b=document.createElement('button'); b.type='button'; b.id='btnData'; b.className='ghost';
     b.title='Contient tous les matchs et logos (dépôt + ajouts faits sur cet ordinateur). À déposer dans le dépôt GitHub pour que tout le staff les voie.';
     b.addEventListener('click',()=>download('donnees.json',JSON.stringify({matchs:merged('matchs'),logos:merged('logos'),config:merged('config')})));
