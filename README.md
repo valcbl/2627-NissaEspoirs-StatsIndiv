@@ -26,7 +26,7 @@ Page staff des statistiques individuelles : rapports de match, saison, comparais
 
 ## Temps de jeu
 
-Menu « Temps de jeu & tâches » : en mode administrateur, saisis les minutes de chaque joueur (J1 à J18, 1/4, 1/2, finale). Le formulaire en bas de page permet d'ajouter un joueur à l'effectif (nom, prénom, année, poste). Comme pour les matchs, télécharge ensuite `donnees.json` et remplace-le dans le dépôt.
+Menu « Temps de jeu & tâches » : en mode administrateur, saisis les minutes de chaque joueur (J1 à J18, 1/4, 1/2, finale). Le formulaire en bas de page permet d'ajouter un joueur à l'effectif (nom, prénom, année, poste). La barre « Évaluation » colore les cases de minutes (Rouge, Blanc, Jaune, Vert, Bleu) : choisis une couleur, clique sur les cases, puis « Saisir les minutes » pour revenir à la saisie. Comme pour les matchs, télécharge ensuite `donnees.json` et remplace-le dans le dépôt.
 
 ## Qui voit quoi
 

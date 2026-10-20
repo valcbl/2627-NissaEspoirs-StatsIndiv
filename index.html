@@ -236,11 +236,23 @@ button.danger{background:var(--card);color:var(--bad);border-color:var(--line)}
 .ptab th.dom small:last-child{color:var(--good)}
 .mtab th small.nc{color:var(--nissa);font-weight:600}
 .mtab td.nc{font-size:10px;font-style:italic}
+:root{--ev-rouge:#f87171;--ev-blanc:#ffffff;--ev-jaune:#fde047;--ev-vert:#4ade80;--ev-bleu:#60a5fa;--ev-ink:#1d1d1b}
+.evbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;position:sticky;top:env(safe-area-inset-top,0px);z-index:6}
+.evbar .evlab{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-right:4px}
+.evbar .evb{background:var(--card);color:var(--ink);border:1px solid var(--line);font-size:11px;padding:5px 10px;display:inline-flex;gap:6px;align-items:center}
+.evbar .evb.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink) inset}
+.evbar .evb i{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid rgba(0,0,0,.35)}
+.evbar .evhint{font-size:11px;color:var(--muted)}
+.evb.ev-rouge i{background:var(--ev-rouge)} .evb.ev-blanc i{background:var(--ev-blanc)} .evb.ev-jaune i{background:var(--ev-jaune)} .evb.ev-vert i{background:var(--ev-vert)} .evb.ev-bleu i{background:var(--ev-bleu)}
+.mtab td.ev-rouge,.mtab td.ev-rouge input{background:var(--ev-rouge);color:var(--ev-ink)}
+.mtab td.ev-jaune,.mtab td.ev-jaune input{background:var(--ev-jaune);color:var(--ev-ink)}
+.mtab td.ev-vert,.mtab td.ev-vert input{background:var(--ev-vert);color:var(--ev-ink)}
+.mtab td.ev-bleu,.mtab td.ev-bleu input{background:var(--ev-bleu);color:var(--ev-ink)}
+.mtab td.ev-blanc,.mtab td.ev-blanc input{background:var(--ev-blanc);color:var(--ev-ink);box-shadow:inset 0 0 0 1.5px var(--ev-ink)}
+.mtab td.mi.ev-rouge,.mtab td.mi.ev-jaune,.mtab td.mi.ev-vert,.mtab td.mi.ev-bleu,.mtab td.mi.ev-blanc{border-radius:6px}
+.mtab td.mi input[readonly]{cursor:pointer}
 footer{border-top:1px solid var(--line);padding-top:10px}
 </style>
-<style>body{margin:0}[hidden]{display:none!important}</style>
-</head>
-<body>
 <div class="wrap">
 <div class="bar-tools no-print">
   <div class="left">
@@ -996,7 +1008,10 @@ const NON_CODE={J1:'vidéo inexploitable'};
 const ncCell='<td class="d nc" title="Match non codé : vidéo inexploitable">n.c.</td>';
 const MIN_LAB=c=>({QF:'1/4',DF:'1/2',F:'Finale'}[c]||c);
 const CAL={J1:'Vienne',J2:'Bourg',J3:'Bourgoin',J4:'Chambéry',J5:'Narbonne',J6:'Carcassonne',J7:'Béziers',J8:'Albi',J9:'Provence',J10:'Vienne',J11:'Bourg',J12:'Bourgoin',J13:'Chambéry',J14:'Narbonne',J15:'Carcassonne',J16:'Béziers',J17:'Albi'};
-let MIN={}, MIN_LOADED=false, minTimer=null;
+let MIN={}, MIN_LOADED=false, minTimer=null, MINC={}, PROC={}, BRUSH=null;
+const EVAL=[['rouge','Rouge'],['blanc','Blanc'],['jaune','Jaune'],['vert','Vert'],['bleu','Bleu']];
+const evCls=(map,n,c)=>{ const k=(map[n]||{})[c]; return k?' ev-'+k:''; };
+function evalBar(){ return `<div class="evbar no-print" role="toolbar" aria-label="Couleur d’évaluation"><span class="evlab">Évaluation :</span><button type="button" class="evb${BRUSH?'':' on'}" data-b="">Saisir les minutes</button>${EVAL.map(([k,l])=>`<button type="button" class="evb sw ev-${k}${BRUSH===k?' on':''}" data-b="${k}" aria-pressed="${BRUSH===k}"><i></i>${l}</button>`).join('')}<button type="button" class="evb${BRUSH==='x'?' on':''}" data-b="x">Effacer la couleur</button><span class="evhint">${BRUSH?'Clique sur les cases à colorer.':'Choisis une couleur puis clique sur les cases.'}</span></div>`; }
 function colOf(m){ const j=norm(m.journee||''); const n=j.match(/^J\s*0*(\d{1,2})$/); if(n) return 'J'+(+n[1]);
   if(/QUART|1\/4/.test(j)) return 'QF'; if(/DEMI|1\/2/.test(j)) return 'DF'; if(/FINAL/.test(j)) return 'F'; return null; }
 const minTot=n=>Object.values(MIN[n]||{}).reduce((s,x)=>s+(+x||0),0);
@@ -1004,7 +1019,7 @@ const minCoded=n=>{ const cs=new Set(MATCHES.map(colOf).filter(Boolean)); return
 const minMatchs=n=>Object.values(MIN[n]||{}).filter(x=>+x>0).length;
 function tachesByPlayer(){ const T={}; for(const m of MATCHES){ const c=colOf(m); if(!c) continue; for(const p of mapPlayers(m.data.players)){ (T[p.name]=T[p.name]||{})[c]=(T[p.name][c]||0)+(p.taches||0); } } return T; }
 function saveMinutes(){ clearTimeout(minTimer); const st=$('minState'); if(st) st.textContent='Enregistrement…';
-  minTimer=setTimeout(async()=>{ try{ if(DB) await DB.doc('temps/saison').set({minutes:MIN}); if(st) st.textContent='Enregistré.'; }catch(e){ if(st){ st.className='msg err'; st.textContent='Enregistrement impossible, réessaie.'; } } },600); }
+  minTimer=setTimeout(async()=>{ try{ if(DB) await DB.doc('temps/saison').set({minutes:MIN,couleurs:MINC}); if(st) st.textContent='Enregistré.'; }catch(e){ if(st){ st.className='msg err'; st.textContent='Enregistrement impossible, réessaie.'; } } },600); }
 function renderMinutes(){
   if(!CMP_OK){ renderLock(MIN_ID); window.__report={id:MIN_ID,season:true,ajoute:'lock'}; return; }
   const el=document.getElementById('report');
@@ -1013,12 +1028,13 @@ function renderMinutes(){
   Object.keys(MIN).forEach(k=>{ const c=canon(k); if(c!==k){ MIN[c]=Object.assign({},MIN[k],MIN[c]||{}); delete MIN[k]; } });
   const edit=!!(DB&&canWrite);
   const head=`<tr><th>Joueur</th><th>Né en</th>${MIN_COLS.map(c=>`<th class="${played.has(c)?'played':''}">${MIN_LAB(c)}${CAL[c]?`<small>${CAL[c]}</small>`:''}</th>`).join('')}`;
-  const minRows=names.map(n=>`<tr><td>${badge(n)}${h(n)}${edit&&rosterOf(n)?`<button type="button" class="rm no-print" data-n="${h(n)}" title="Retirer ${h(n)} de l’effectif" aria-label="Retirer ${h(n)} de l’effectif">×</button>`:''}</td><td class="d">${anneeOf(n)||'–'}</td>${MIN_COLS.map(c=>{const val=(MIN[n]||{})[c]; return edit?`<td class="mi"><input type="number" min="0" max="120" inputmode="numeric" data-p="${h(n)}" data-c="${c}" value="${val??''}" aria-label="${h(n)} ${MIN_LAB(c)}"></td>`:`<td class="${val?'':'d'}">${val||'–'}</td>`;}).join('')}<td class="pct">${minTot(n)||'–'}</td><td>${minMatchs(n)||'–'}</td></tr>`).join('');
+  const minRows=names.map(n=>`<tr><td>${badge(n)}${h(n)}${edit&&rosterOf(n)?`<button type="button" class="rm no-print" data-n="${h(n)}" title="Retirer ${h(n)} de l’effectif" aria-label="Retirer ${h(n)} de l’effectif">×</button>`:''}</td><td class="d">${anneeOf(n)||'–'}</td>${MIN_COLS.map(c=>{const val=(MIN[n]||{})[c]; return edit?`<td class="mi${evCls(MINC,n,c)}"><input type="number" min="0" max="120" inputmode="numeric" data-p="${h(n)}" data-c="${c}" value="${val??''}" aria-label="${h(n)} ${MIN_LAB(c)}"${BRUSH?' readonly':''}></td>`:`<td class="${val?'':'d'}${evCls(MINC,n,c)}">${val||'–'}</td>`;}).join('')}<td class="pct">${minTot(n)||'–'}</td><td>${minMatchs(n)||'–'}</td></tr>`).join('');
   const tRows=names.filter(n=>T[n]).map(n=>{const tot=Object.values(T[n]).reduce((s,x)=>s+x,0), nm=Object.keys(T[n]).length, mt=minCoded(n);
     return `<tr><td>${badge(n)}${h(n)}</td><td class="d">${anneeOf(n)||'–'}</td>${MIN_COLS.map(c=>NON_CODE[c]?ncCell:`<td class="${T[n][c]?'':'d'}">${T[n][c]??'–'}</td>`).join('')}<td class="pct">${tot}</td><td>${(Math.round(tot/nm*10)/10).toString().replace('.',',')}</td><td class="pct">${mt?(Math.round(tot/mt*100)/100).toFixed(2).replace('.',','):'–'}</td></tr>`;}).join('');
   const teamCol=c=>Object.values(T).reduce((s,x)=>s+(x[c]||0),0);
   const teamTot=MIN_COLS.reduce((s,c)=>s+teamCol(c),0);
   el.innerHTML=`<header class="mast"><img src="data:image/png;base64,${LOGO}" alt="Nissa Rugby"><div class="t"><div class="eyebrow">Nissa Rugby · Staff · Espoirs Accession</div><h1>Temps de jeu & tâches</h1><div class="meta">Saison 2026-2027 · J1 à J18 et phases finales</div></div></header>
+  ${edit?evalBar():''}
   <section class="sector" id="minutes"><div class="sec-title"><h2><svg class="hex" viewBox="0 0 16 18" aria-hidden="true"><polygon points="8,0 16,3.2 14.7,14 8,18 1.3,14 0,3.2" fill="var(--nissa)"/></svg>Minutes jouées</h2><span>${edit?'Saisie manuelle · enregistrement automatique':'Saisi par le staff'}</span></div>
   <div class="card"><div class="tw"><table class="mtab"><thead>${head}<th>Total</th><th>Matchs</th></tr></thead><tbody>${minRows||`<tr><td colspan="${MIN_COLS.length+4}" class="d">Aucun joueur pour l’instant.</td></tr>`}</tbody></table></div>
   ${edit?`<form id="addP" class="addp no-print"><h4>Ajouter un joueur à l’effectif</h4><div class="addp-f"><label for="apNom">Nom<input type="text" id="apNom" required></label><label for="apPre">Prénom<input type="text" id="apPre"></label><label for="apAn">Né en<input type="number" id="apAn" min="1990" max="2015" inputmode="numeric"></label><label for="apPo">Poste<select id="apPo"><option value="">–</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option></select></label><button type="submit">Ajouter</button></div><span class="msg" id="minState" aria-live="polite"></span></form>`:''}</div></section>
@@ -1026,6 +1042,11 @@ function renderMinutes(){
   <section class="sector" id="taches"><div class="sec-title"><h2><svg class="hex" viewBox="0 0 16 18" aria-hidden="true"><polygon points="8,0 16,3.2 14.7,14 8,18 1.3,14 0,3.2" fill="var(--nissa)"/></svg>Tâches par match</h2><span>Calculées automatiquement à partir des matchs importés</span></div>
   <div class="card"><p class="sub">Une tâche = une action codée en défense, ruck, attaque ou phase spécifique (fautes et points non comptés). Tâches/min = tâches divisées par les minutes jouées sur les matchs codés. J1 Vienne non codée (vidéo inexploitable) : ses minutes ne comptent pas dans ce calcul.</p><div class="tw"><table class="mtab"><thead>${head.replace(/(<th class="[^"]*">J1<small>[^<]*<\/small>)/,'$1<small class="nc">non codé</small>')}<th>Total</th><th>Moy./match</th><th>Tâches/min</th></tr></thead><tbody>${tRows}<tr style="border-top:2px solid var(--ink)"><td><b>Équipe</b></td><td></td>${MIN_COLS.map(c=>NON_CODE[c]?ncCell:`<td class="pct ${teamCol(c)?'':'d'}">${teamCol(c)||'–'}</td>`).join('')}<td class="pct">${teamTot}</td><td>${played.size?Math.round(teamTot/played.size):'–'}</td><td></td></tr></tbody></table></div></div></section>`;
   if(edit){
+    el.querySelectorAll('.evb').forEach(b=>b.addEventListener('click',()=>{ BRUSH=b.dataset.b||null; renderMinutes(); }));
+    el.querySelectorAll('.mtab td.mi').forEach(td=>td.addEventListener('click',e=>{ if(!BRUSH) return; e.preventDefault(); const inp=td.querySelector('input'); if(!inp) return;
+      const pro=!!inp.dataset.pp, n=pro?inp.dataset.pp:inp.dataset.p, c=inp.dataset.c, map=pro?PROC:MINC;
+      map[n]=map[n]||{}; if(BRUSH==='x') delete map[n][c]; else map[n][c]=BRUSH;
+      td.className='mi'+evCls(map,n,c); pro?savePro():saveMinutes(); }));
     bindPro(el);
     el.querySelectorAll('.mtab input[data-p]').forEach(inp=>inp.addEventListener('change',()=>{ const p=inp.dataset.p, c=inp.dataset.c; let x=inp.value===''?null:Math.max(0,Math.min(120,Math.round(+inp.value))); MIN[p]=MIN[p]||{}; if(x==null) delete MIN[p][c]; else MIN[p][c]=x; inp.value=x??''; saveMinutes();
       const tr=inp.closest('tr'); tr.cells[MIN_COLS.length+2].textContent=minTot(p)||'–'; tr.cells[MIN_COLS.length+3].textContent=minMatchs(p)||'–'; }));
@@ -1033,7 +1054,7 @@ function renderMinutes(){
       if(!btn.classList.contains('armed')){ el.querySelectorAll('.mtab .rm.armed').forEach(b=>{b.classList.remove('armed');b.textContent='×';}); btn.classList.add('armed'); btn.textContent='Retirer ?'; setTimeout(()=>{ if(btn.isConnected){ btn.classList.remove('armed'); btn.textContent='×'; } },4000); return; }
       const n=btn.dataset.n, r=rosterOf(n); if(!r) return;
       const list=ROSTER.filter(x=>x!==r).map(({display,...x})=>x);
-      try{ await DB.doc('effectif/saison').set({joueurs:list}); setRoster(list); if(MIN[n]){ delete MIN[n]; saveMinutes(); } renderMinutes(); const s2=$('minState'); if(s2){ s2.className='msg ok'; s2.textContent=n+' retiré de l’effectif.'; } }
+      try{ await DB.doc('effectif/saison').set({joueurs:list}); setRoster(list); if(MIN[n]||MINC[n]){ delete MIN[n]; delete MINC[n]; saveMinutes(); } renderMinutes(); const s2=$('minState'); if(s2){ s2.className='msg ok'; s2.textContent=n+' retiré de l’effectif.'; } }
       catch(err){ const s2=$('minState'); if(s2){ s2.className='msg err'; s2.textContent='Suppression impossible, réessaie.'; } } }));
     $('addP').addEventListener('submit',async e=>{ e.preventDefault(); const nom=$('apNom').value.trim().toUpperCase(); if(!nom) return; const st=$('minState');
       if(ROSTER.some(r=>nkey(r.nom)===nkey(nom))){ st.className='msg err'; st.textContent='Ce joueur est déjà dans l’effectif.'; return; }
@@ -1054,11 +1075,11 @@ let PRO={joueurs:[],minutes:{}}, proTimer=null;
 const proTot=n=>Object.values(PRO.minutes[n]||{}).reduce((s,x)=>s+(+x||0),0);
 const proApp=n=>Object.values(PRO.minutes[n]||{}).filter(x=>x!==null&&x!=='').length;
 function savePro(){ clearTimeout(proTimer); const st=$('proState'); if(st){ st.className='msg'; st.textContent='Enregistrement…'; }
-  proTimer=setTimeout(async()=>{ try{ if(DB) await DB.doc('temps/pro').set({joueurs:PRO.joueurs,minutes:PRO.minutes}); if(st){ st.className='msg ok'; st.textContent='Enregistré.'; } }catch(e){ if(st){ st.className='msg err'; st.textContent='Enregistrement impossible, réessaie.'; } } },600); }
+  proTimer=setTimeout(async()=>{ try{ if(DB) await DB.doc('temps/pro').set({joueurs:PRO.joueurs,minutes:PRO.minutes,couleurs:PROC}); if(st){ st.className='msg ok'; st.textContent='Enregistré.'; } }catch(e){ if(st){ st.className='msg err'; st.textContent='Enregistrement impossible, réessaie.'; } } },600); }
 function proSection(edit){
   const names=[...PRO.joueurs].map(canon).filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>(posteOf(a)||99)-(posteOf(b)||99)||a.localeCompare(b,'fr'));
   const head=`<tr><th>Joueur</th>${PRO_COLS.map(c=>{const k=PRO_CAL[c]; return `<th class="${k?(k[1]==='D'?'dom':'ext'):''}">${PRO_LAB(c)}${k?`<small>${h(k[0].replace(' Rugby','').replace('Soyaux-Angoulême','Soyaux'))}</small><small>${k[1]==='D'?'Dom.':'Ext.'} ${k[2]}</small>`:''}</th>`;}).join('')}<th>Total Pro</th><th>Matchs Pro</th><th>Total Espoirs</th><th>Total saison</th></tr>`;
-  const rows=names.map(n=>`<tr><td>${badge(n)}${h(n)}${edit?`<button type="button" class="rm no-print" data-pro="${h(n)}" title="Retirer ${h(n)} du tableau Pro" aria-label="Retirer ${h(n)} du tableau Pro">×</button>`:''}</td>${PRO_COLS.map(c=>{const v=(PRO.minutes[n]||{})[c]; return edit?`<td class="mi"><input type="number" min="0" max="120" inputmode="numeric" data-pp="${h(n)}" data-c="${c}" value="${v??''}" aria-label="${h(n)} Pro ${PRO_LAB(c)}"></td>`:`<td class="${v!=null?'':'d'}">${v??'–'}</td>`;}).join('')}<td class="pct">${proTot(n)||'–'}</td><td>${proApp(n)||'–'}</td><td>${minTot(n)||'–'}</td><td class="pct">${(proTot(n)+minTot(n))||'–'}</td></tr>`).join('');
+  const rows=names.map(n=>`<tr><td>${badge(n)}${h(n)}${edit?`<button type="button" class="rm no-print" data-pro="${h(n)}" title="Retirer ${h(n)} du tableau Pro" aria-label="Retirer ${h(n)} du tableau Pro">×</button>`:''}</td>${PRO_COLS.map(c=>{const v=(PRO.minutes[n]||{})[c]; return edit?`<td class="mi${evCls(PROC,n,c)}"><input type="number" min="0" max="120" inputmode="numeric" data-pp="${h(n)}" data-c="${c}" value="${v??''}" aria-label="${h(n)} Pro ${PRO_LAB(c)}"${BRUSH?' readonly':''}></td>`:`<td class="${v!=null?'':'d'}${evCls(PROC,n,c)}">${v??'–'}</td>`;}).join('')}<td class="pct">${proTot(n)||'–'}</td><td>${proApp(n)||'–'}</td><td>${minTot(n)||'–'}</td><td class="pct">${(proTot(n)+minTot(n))||'–'}</td></tr>`).join('');
   const avail=ROSTER.map(r=>r.display).filter(n=>!names.includes(n)).sort((a,b)=>a.localeCompare(b,'fr'));
   return `<section class="sector" id="minutes-pro"><div class="sec-title"><h2><svg class="hex" viewBox="0 0 16 18" aria-hidden="true"><polygon points="8,0 16,3.2 14.7,14 8,18 1.3,14 0,3.2" fill="var(--nissa)"/></svg>Minutes jouées en PRO D2</h2><span>Espoirs appelés en équipe première · calendrier 2026-2027</span></div>
   <div class="card"><p class="sub">Case vide = pas sur la feuille de match. 0 = entré sans jouer, compte comme une apparition.</p><div class="tw"><table class="mtab ptab"><thead>${head}</thead><tbody>${rows||`<tr><td colspan="${PRO_COLS.length+5}" class="d">Aucun espoir en PRO pour l’instant.</td></tr>`}</tbody></table></div>
@@ -1069,7 +1090,7 @@ function bindPro(el){
     const tr=inp.closest('tr'), L=PRO_COLS.length; tr.cells[L+1].textContent=proTot(p)||'–'; tr.cells[L+2].textContent=proApp(p)||'–'; tr.cells[L+4].textContent=(proTot(p)+minTot(p))||'–'; }));
   el.querySelectorAll('.rm[data-pro]').forEach(btn=>btn.addEventListener('click',()=>{
     if(!btn.classList.contains('armed')){ btn.classList.add('armed'); btn.textContent='Retirer ?'; setTimeout(()=>{ if(btn.isConnected){ btn.classList.remove('armed'); btn.textContent='×'; } },4000); return; }
-    const n=btn.dataset.pro; PRO.joueurs=PRO.joueurs.filter(x=>canon(x)!==n); delete PRO.minutes[n]; savePro(); renderMinutes(); }));
+    const n=btn.dataset.pro; PRO.joueurs=PRO.joueurs.filter(x=>canon(x)!==n); delete PRO.minutes[n]; delete PROC[n]; savePro(); renderMinutes(); }));
   const f=$('addPro'); if(f) f.addEventListener('submit',e=>{ e.preventDefault(); const n=$('proSel').value; if(!n) return; if(!PRO.joueurs.includes(n)) PRO.joueurs.push(n); savePro(); renderMinutes(); });
 }
 
@@ -1244,9 +1265,9 @@ renderReport(null); fillSelect();
   if(user){ const [own,ed,c]=await Promise.all([user.isOwner(),user.canEdit(),user.can('data.write')]); OWNER=own; if(!(own||ed)||c===false){ canWrite=false; $('btnImport').hidden=true; $('importPanel').hidden=true; } } else { canWrite=false; $('btnImport').hidden=true; }
   let saved=null; try{ saved=localStorage.getItem('match'); }catch(e){}
   db.doc('effectif/saison').onSnapshot(s=>{ const d=s.exists?s.data():null; setRoster(d&&d.joueurs||[]); if(current) show(current); },()=>{});
-  db.doc('temps/pro').onSnapshot(s=>{ const d=s.exists?s.data():null; PRO={joueurs:[...((d&&d.joueurs)||[])],minutes:JSON.parse(JSON.stringify((d&&d.minutes)||{}))};
+  db.doc('temps/pro').onSnapshot(s=>{ const d=s.exists?s.data():null; PRO={joueurs:[...((d&&d.joueurs)||[])],minutes:JSON.parse(JSON.stringify((d&&d.minutes)||{}))}; PROC=JSON.parse(JSON.stringify((d&&d.couleurs)||{}));
     if(current===MIN_ID && !(document.activeElement&&document.activeElement.closest&&document.activeElement.closest('.mtab'))) renderMinutes(); },()=>{});
-  db.doc('temps/saison').onSnapshot(s=>{ const d=s.exists?s.data():null; MIN=JSON.parse(JSON.stringify((d&&d.minutes)||{})); MIN_LOADED=true;
+  db.doc('temps/saison').onSnapshot(s=>{ const d=s.exists?s.data():null; MIN=JSON.parse(JSON.stringify((d&&d.minutes)||{})); MINC=JSON.parse(JSON.stringify((d&&d.couleurs)||{})); MIN_LOADED=true;
     if(current===MIN_ID && !(document.activeElement&&document.activeElement.closest&&document.activeElement.closest('.mtab'))) renderMinutes();
     if(current===SEASON_ID) renderSeason(); },()=>{});
   db.collection('logos').onSnapshot(snap=>{
