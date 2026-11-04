@@ -569,6 +569,7 @@ function ruckOff(){
     {n:'Joueur',f:p=>p.name,s:p=>pkey(p.name)},
     {n:'Interventions',f:p=>v(p,'ro')},{n:'Bonnes att.',f:p=>v(p,'ro_pos')},{n:'Att. mauvaises',f:p=>v(p,'ro_neg'),cls:p=>v(p,'ro_neg')>=2?'r':''},
     {n:'Efficacité',f:p=>pctTxt(pct(v(p,'ro_pos'),v(p,'ro'))),s:p=>pct(v(p,'ro_pos'),v(p,'ro')),cls:p=>'pct '+pctCls(pct(v(p,'ro_pos'),v(p,'ro')),100,85)},
+    {n:'1er',f:p=>v(p,'ro_1er')},{n:'2e',f:p=>v(p,'ro_r2')},{n:'3e',f:p=>v(p,'ro_r3')},{n:'4e et +',f:p=>v(p,'ro_r4')},
     {n:'Ancreur',f:p=>v(p,'ro_ancreur')},{n:'Raseur',f:p=>v(p,'ro_raseur')},{n:'Latcheur',f:p=>v(p,'ro_latcheur')}],[...P].sort(byName));
   return sec('ruck-off','Ruck offensif','Soutien, rôle et attitudes sur nos rucks',k+`<div class="grid2">${chart}<div class="side">${roles}${ranks}${ret}</div></div>`+tb);
 }
