@@ -280,7 +280,7 @@ footer{border-top:1px solid var(--line);padding-top:10px}
 .fc-sec h3{margin:0 0 8px;font-family:var(--display);font-weight:800;font-size:19px;text-transform:uppercase;letter-spacing:.03em;display:flex;align-items:center;gap:8px;padding-bottom:5px;border-bottom:1.5px solid var(--ink)}
 .fc-sec h3 .hex{width:14px;height:16px;flex:none}
 .fc-body{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:center}
-.fc-body.has-ring{grid-template-columns:minmax(0,1fr) 96px}
+.fc-body.has-ring{grid-template-columns:minmax(0,1fr) 136px}
 .fc-body ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
 .fc-body li{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:2px 0;border-bottom:1px dotted var(--line)}
 .fc-body li span{color:var(--ink)}
@@ -316,6 +316,17 @@ footer{border-top:1px solid var(--line);padding-top:10px}
 .exporting .fc-logo{display:block!important}
 .exporting .fc-cols{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 .exporting .fiche::before{display:none}
+
+.fc-refs{display:flex;flex-direction:column;gap:2px;width:100%;margin-top:4px;border-top:1px solid var(--line);padding-top:5px}
+.fc-ring .fc-r{display:grid;grid-template-columns:minmax(0,1fr) auto 28px;align-items:baseline;gap:4px;font-size:10.5px;line-height:1.35;text-align:left;letter-spacing:0;text-transform:none}
+.fc-r em{font-style:normal;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc-r b{font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink)}
+.fc-r i{font-style:normal;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.fc-r.up i{color:var(--good)} .fc-r.dn i{color:var(--bad)}
+
+.mtab td.pc{padding:2px}
+.mtab select.psel{font:inherit;font-size:12px;padding:4px 2px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);width:48px;cursor:pointer}
+.mtab select.psel:focus{border-color:var(--nissa);outline:none}
 </style>
 <div class="wrap">
 <div class="bar-tools no-print">
@@ -1076,9 +1087,21 @@ function photoFile(file,max=360){return new Promise((res,rej)=>{const fr=new Fil
 const FC_TOFF=p=>v(p,'ro')+v(p,'passe_pos')+v(p,'passe_neg')+v(p,'off_pos')+v(p,'off_neg')+v(p,'pdb')+v(p,'defbattu')+v(p,'franch')+v(p,'duel_pos')+v(p,'duel_neg')+v(p,'espace_pos')+v(p,'espace_neg');
 const FC_TDEF=p=>v(p,'plaq_ok')+v(p,'plaq_rate')+v(p,'ast_pos')+v(p,'ast_neg')+v(p,'rd')+v(p,'recup');
 const FC_COMBAT=p=>v(p,'plaq_ok')+v(p,'plaq_rate')+v(p,'ast_pos')+v(p,'ast_neg')+v(p,'ro')+v(p,'rd')+v(p,'duel_pos')+v(p,'duel_neg');
-function fcRing(num,den,lab){
+const FC_GRP={1:['piliers',[1,3]],3:['piliers',[1,3]],2:['talonneurs',[2]],4:['2e lignes',[4,5]],5:['2e lignes',[4,5]],6:['3e lignes',[6,7,8]],7:['3e lignes',[6,7,8]],8:['3e lignes',[6,7,8]],9:['demis de mêlée',[9]],10:['ouvreurs',[10]],12:['centres',[12,13]],13:['centres',[12,13]],11:['ailiers/arr.',[11,14,15]],14:['ailiers/arr.',[11,14,15]],15:['ailiers/arr.',[11,14,15]]};
+const FC_RATE={
+  att:[p=>v(p,'duel_pos')+v(p,'espace_pos'),p=>v(p,'duel_pos')+v(p,'duel_neg')+v(p,'espace_pos')+v(p,'espace_neg')],
+  ro:[p=>v(p,'ro_pos'),p=>v(p,'ro')],
+  def:[p=>v(p,'plaq_ok'),p=>v(p,'plaq_ok')+v(p,'plaq_rate')],
+  rd:[p=>v(p,'rd_pos'),p=>v(p,'rd')]};
+function fcRef(lab,ps,key,x){
+  const [fn,fd]=FC_RATE[key]; const n=ps.reduce((s,q)=>s+fn(q),0), d=ps.reduce((s,q)=>s+fd(q),0);
+  if(!d) return `<span class="fc-r"><em>${h(lab)}</em><b>–</b></span>`;
+  const y=Math.round(100*n/d), dif=x==null?null:x-y, cls=dif==null?'':dif>=3?' up':dif<=-3?' dn':' eq';
+  return `<span class="fc-r${cls}"><em>${h(lab)}</em><b>${y} %</b><i title="Écart du joueur">${dif==null?'':(dif>0?'+':dif<0?'−':'')+Math.abs(dif)}</i></span>`;
+}
+function fcRing(num,den,lab,refs=''){
   const x=den?Math.round(100*num/den):null, R=34, C=2*Math.PI*R;
-  return `<div class="fc-ring" role="img" aria-label="${lab} : ${x==null?'aucune donnée':x+' %'}"><svg viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="41" fill="#1d1d1b"/><circle cx="42" cy="42" r="${R}" fill="none" stroke="#3a3a37" stroke-width="5"/>${x?`<circle cx="42" cy="42" r="${R}" fill="none" stroke="#e30613" stroke-width="5" stroke-linecap="round" stroke-dasharray="${(C*x/100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 42 42)"/>`:''}<text x="42" y="${x==null?47:46}" text-anchor="middle" fill="#ffffff" font-size="${x==null?16:19}" font-weight="800">${x==null?'–':x+'%'}</text></svg><span>${lab}</span></div>`;
+  return `<div class="fc-ring" role="img" aria-label="${lab} : ${x==null?'aucune donnée':x+' %'}"><svg viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="41" fill="#1d1d1b"/><circle cx="42" cy="42" r="${R}" fill="none" stroke="#3a3a37" stroke-width="5"/>${x?`<circle cx="42" cy="42" r="${R}" fill="none" stroke="#e30613" stroke-width="5" stroke-linecap="round" stroke-dasharray="${(C*x/100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 42 42)"/>`:''}<text x="42" y="${x==null?47:46}" text-anchor="middle" fill="#ffffff" font-size="${x==null?16:19}" font-weight="800">${x==null?'–':x+'%'}</text></svg><span>${lab}</span>${refs?`<div class="fc-refs">${refs}</div>`:''}</div>`;
 }
 const fcRow=(lab,val,cls='')=>`<li class="${cls}${val?'':' z'}"><span>${lab}</span><b>${val==null||val===''?'–':String(val).replace('.',',')}</b></li>`;
 const fcPair=(lab,p,k)=>fcRow(lab+' +',v(p,k+'_pos'),'pos')+fcRow(lab+' −',v(p,k+'_neg'),'neg');
@@ -1109,9 +1132,18 @@ function renderFiche(){
   const opt=names.map(x=>`<option value="${h(x)}"${x===n?' selected':''}>${posteOf(x)?posteOf(x)+' · ':''}${h(x)}</option>`).join('');
   const scopeOpts=`<option value="saison"${season?' selected':''}>Saison (${list.length} matchs codés)</option>`+[...list].reverse().map(x=>`<option value="${h(x.id)}"${x.id===FICHE.scope?' selected':''}>${h(label(x))}</option>`).join('');
   const L=FC_TOFF(p)+FC_TDEF(p);
+  const pool=season?all:mapPlayers(m.data.players);
+  const p2=poste2Of(n)?[poste2Of(n)]:[];
+  const gopts=[]; [r&&r.poste,...p2].filter(Boolean).forEach(x=>{ const g=FC_GRP[x]; if(g&&!gopts.some(o=>o[0]===g[0])) gopts.push([g[0],g[1],x]); });
+  FICHE.g=FICHE.g||{}; let gsel=gopts.find(o=>o[0]===FICHE.g[n])||gopts[0];
+  const grp=gsel?[gsel[0],gsel[1]]:null, gpool=grp?pool.filter(q=>grp[1].includes(posteOf(q.name))):[];
+  const ring=(key,lab)=>{ const [fn,fd]=FC_RATE[key], num=fn(p), den=fd(p), x=den?Math.round(100*num/den):null;
+    return fcRing(num,den,lab,fcRef('Équipe',pool,key,x)+(grp?fcRef(grp[0][0].toUpperCase()+grp[0].slice(1),gpool,key,x):'')); };
   el.innerHTML=`<div class="card cmp-ctl no-print">
     <label for="fcN">Joueur<select id="fcN">${opt}</select></label>
     <label for="fcS">Périmètre<select id="fcS">${scopeOpts}</select></label>
+    ${gopts.length>1?`<label for="fcG">Comparer au poste<select id="fcG">${gopts.map(o=>`<option value="${h(o[0])}"${o===gsel?' selected':''}>${h(o[0][0].toUpperCase()+o[0].slice(1))} (${o[1].join(', ')})${o[2]===r.poste?' · principal':''}</option>`).join('')}</select></label>`:''}
+
     ${canWrite&&DB?`<label class="fc-up">Photo du joueur<span><button type="button" id="fcPhotoBtn" class="ghost">${photo?'Changer la photo':'Ajouter une photo'}</button>${photo?'<button type="button" id="fcPhotoDel" class="ghost">Retirer</button>':''}<input type="file" id="fcPhoto" accept="image/*" hidden></span><em class="msg" id="fcMsg" aria-live="polite"></em></label>`:''}
   </div>
   <article class="fiche" aria-label="Fiche de ${h(n)}">
@@ -1119,7 +1151,7 @@ function renderFiche(){
       <div class="fc-photo">${photo?`<img src="${photo}" alt="${h(n)}">`:`<span aria-hidden="true">${h((pre[0]||'')+(nom[0]||''))}</span>`}</div>
       <div class="fc-id">
         <h1><span>${h(nom)}</span>${pre?`<span class="pre">${h(pre)}</span>`:''}</h1>
-        <div class="fc-meta">${r&&r.annee?`<b>${r.annee}</b>`:''}${r&&r.poste?`<span>N° <b>${r.poste}</b></span><span class="pos">${h(POSTES[r.poste]||'')}</span>`:''}</div>
+        <div class="fc-meta">${r&&r.annee?`<b>${r.annee}</b>`:''}${r&&r.poste?`<span>N° <b>${r.poste}</b></span><span class="pos">${h(POSTES[r.poste]||'')}</span>`:''}${p2.length?`<span>Poste 2 : <b>${p2[0]}</b></span>`:''}</div>
         <div class="fc-scope">${h(scopeTxt)}</div>
       </div>
       <img class="fc-logo" src="data:image/png;base64,${LOGO}" alt="Nissa Rugby">
@@ -1133,22 +1165,24 @@ function renderFiche(){
     <div class="fc-cols">
       <div class="fc-col">
         ${fcSec('Activité',fcRow('Tâches off',FC_TOFF(p))+fcRow('Tâches déf',FC_TDEF(p))+fcRow('Actions de combat',FC_COMBAT(p)))}
-        ${fcSec('Attaque',fcPair('Contacts',p,'duel')+fcPair('Duels',p,'espace')+'<li class="sp"></li>'+fcPair('Passes',p,'passe')+fcPair('Offloads',p,'off'),fcRing(v(p,'duel_pos')+v(p,'espace_pos'),v(p,'duel_pos')+v(p,'duel_neg')+v(p,'espace_pos')+v(p,'espace_neg'),'contacts + duels gagnés'))
+        ${fcSec('Attaque',fcPair('Contacts',p,'duel')+fcPair('Duels',p,'espace')+'<li class="sp"></li>'+fcPair('Passes',p,'passe')+fcPair('Offloads',p,'off'),ring('att','contacts + duels gagnés'))
           .replace('</div></section>',`</div><div class="fc-mini"><div><b>${v(p,'pdb')}</b><span>Pertes de balle</span></div><div><b>${v(p,'franch')}</b><span>Breaks</span></div><div><b>${v(p,'defbattu')}</b><span>Déf. battus</span></div></div></section>`)}
-        ${fcSec('Ruck offensif',fcRow('Bonnes attitudes',v(p,'ro_pos'),'pos')+fcRow('Attitudes mauvaises',v(p,'ro_neg'),'neg')+'<li class="hd"><span>Arrivée</span></li>'+fcRow('1er',v(p,'ro_1er'),'ind')+fcRow('2e',v(p,'ro_r2'),'ind')+fcRow('3e et +',v(p,'ro_r3')+v(p,'ro_r4'),'ind')+'<li class="sp"></li>'+fcRow('Ancreur',v(p,'ro_ancreur'))+fcRow('Raseur',v(p,'ro_raseur'))+fcRow('Latcheur',v(p,'ro_latcheur')),fcRing(v(p,'ro_pos'),v(p,'ro'),'efficacité'))}
+        ${fcSec('Ruck offensif',fcRow('Bonnes attitudes',v(p,'ro_pos'),'pos')+fcRow('Attitudes mauvaises',v(p,'ro_neg'),'neg')+'<li class="hd"><span>Arrivée</span></li>'+fcRow('1er',v(p,'ro_1er'),'ind')+fcRow('2e',v(p,'ro_r2'),'ind')+fcRow('3e et +',v(p,'ro_r3')+v(p,'ro_r4'),'ind')+'<li class="sp"></li>'+fcRow('Ancreur',v(p,'ro_ancreur'))+fcRow('Raseur',v(p,'ro_raseur'))+fcRow('Latcheur',v(p,'ro_latcheur')),ring('ro','efficacité'))}
       </div>
       <div class="fc-col">
-        ${fcSec('Défense',fcRow('Plaquages +',v(p,'plaq_dom'),'pos')+fcRow('Plaquages =',plNeutre)+fcRow('Plaquages −',v(p,'plaq_subi'),'neg')+fcRow('Plaquages manqués',v(p,'plaq_rate'),'neg')+fcRow('Assistants +',v(p,'ast_pos'),'pos')+fcRow('Assistants −',v(p,'ast_neg'),'neg')+fcRow('Ballons récupérés',v(p,'recup'),'pos'),fcRing(v(p,'plaq_ok'),v(p,'plaq_ok')+v(p,'plaq_rate'),'plaquages réussis'))}
-        ${fcSec('Ruck défensif',fcRow('Grattages',fcRate(v(p,'gratt_pos'),v(p,'gratt')))+fcRow('Contres-ruck',fcRate(v(p,'contre_pos'),v(p,'contre')))+fcRow('Ratés',v(p,'rd_neg'),'neg'),fcRing(v(p,'rd_pos'),v(p,'rd'),'réussite'))}
+        ${fcSec('Défense',fcRow('Plaquages +',v(p,'plaq_dom'),'pos')+fcRow('Plaquages =',plNeutre)+fcRow('Plaquages −',v(p,'plaq_subi'),'neg')+fcRow('Plaquages manqués',v(p,'plaq_rate'),'neg')+fcRow('Assistants +',v(p,'ast_pos'),'pos')+fcRow('Assistants −',v(p,'ast_neg'),'neg')+fcRow('Ballons récupérés',v(p,'recup'),'pos'),ring('def','plaquages réussis'))}
+        ${fcSec('Ruck défensif',fcRow('Grattages',fcRate(v(p,'gratt_pos'),v(p,'gratt')))+fcRow('Contres-ruck',fcRate(v(p,'contre_pos'),v(p,'contre')))+fcRow('Ratés',v(p,'rd_neg'),'neg'),ring('rd','réussite'))}
         ${fcSec('Spécifique',fcPair('Mêlées',p,'melee')+fcPair('Lancers',p,'lanceur')+fcPair('Sauteurs off',p,'tOFF')+fcPair('Sauteurs déf',p,'tDEF')+fcPair('JAP',p,'jap')+fcPair('Aérien (CE)',p,'aerien'))}
         ${fcSec('Discipline',fcRow('Pénalités',v(p,'faute'),'neg')+`<li class="${cards?'':'z'}"><span>Cartons</span><b>${cards||'0'}</b></li>`)}
       </div>
     </div>
-    <p class="fc-foot">Tâches off = rucks offensifs, passes, offloads, contacts, duels, pertes de balle, franchissements et défenseurs battus · Tâches déf = plaquages (réussis et manqués), assistants, rucks défensifs et ballons récupérés · Actions de combat = plaquages, assistants, rucks offensifs et défensifs, contacts · Plaquages + dominants, = neutres, − subis.</p>
+    <p class="fc-foot">Tâches off = rucks offensifs, passes, offloads, contacts, duels, pertes de balle, franchissements et défenseurs battus · Tâches déf = plaquages (réussis et manqués), assistants, rucks défensifs et ballons récupérés · Actions de combat = plaquages, assistants, rucks offensifs et défensifs, contacts · Plaquages + dominants, = neutres, − subis · Sous chaque cercle : % de toute l’équipe puis des joueurs du même poste${grp?` (${h(grp[0])} : postes ${grp[1].join(', ')})`:''} sur le même périmètre, toutes leurs actions cumulées ; à droite, l’écart du joueur en points : vert = au moins 3 points au-dessus, rouge = au moins 3 points en dessous.</p>
   </article>`;
   const save=()=>{try{localStorage.setItem('fiche',JSON.stringify(FICHE));}catch(e){} renderFiche();};
   $('fcN').addEventListener('change',e=>{FICHE.n=e.target.value; save();});
   $('fcS').addEventListener('change',e=>{FICHE.scope=e.target.value; save();});
+  if($('fcG')) $('fcG').addEventListener('change',e=>{FICHE.g[n]=e.target.value; save();});
+
   const pb=$('fcPhotoBtn');
   if(pb){ const fi=$('fcPhoto'), msg=$('fcMsg');
     pb.addEventListener('click',()=>fi.click());
@@ -1179,6 +1213,8 @@ const minMatchs=n=>Object.values(MIN[n]||{}).filter(x=>+x>0).length;
 function tachesByPlayer(){ const T={}; for(const m of MATCHES){ const c=colOf(m); if(!c) continue; for(const p of mapPlayers(m.data.players)){ (T[p.name]=T[p.name]||{})[c]=(T[p.name][c]||0)+(p.taches||0); } } return T; }
 function saveMinutes(){ clearTimeout(minTimer); const st=$('minState'); if(st) st.textContent='Enregistrement…';
   minTimer=setTimeout(async()=>{ try{ if(DB) await DB.doc('temps/saison').set({minutes:MIN,couleurs:MINC}); const s2=$('minState'); if(s2){ s2.className='msg ok'; s2.textContent='Enregistré.'; } }catch(e){ const s2=$('minState'); if(s2){ s2.className='msg err'; s2.textContent='Enregistrement impossible : ton accès à la page ne permet pas de modifier.'; } } },600); }
+const poste2Of=name=>{ const r=rosterOf(name); if(!r) return null; const x=r.poste2||(Array.isArray(r.postes2)&&r.postes2[0])||null; return x&&x!==r.poste?x:null; };
+function pselHtml(n,k,val){ return `<select class="psel" data-n="${h(n)}" data-k="${k}" aria-label="${k==='poste'?'Poste':'Poste 2'} de ${h(n)}"><option value="">–</option>${Array.from({length:15},(_,i)=>i+1).map(x=>`<option value="${x}"${x===val?' selected':''}>${x}</option>`).join('')}</select>`; }
 function renderMinutes(){
   if(!CMP_OK){ renderLock(MIN_ID); window.__report={id:MIN_ID,season:true,ajoute:'lock'}; return; }
   const el=document.getElementById('report');
@@ -1187,7 +1223,8 @@ function renderMinutes(){
   Object.keys(MIN).forEach(k=>{ const c=canon(k); if(c!==k){ MIN[c]=Object.assign({},MIN[k],MIN[c]||{}); delete MIN[k]; } });
   const edit=!!(DB&&DATA_W), admin=!!(DB&&canWrite);
   const head=`<tr><th>Joueur</th><th>Né en</th>${MIN_COLS.map(c=>`<th class="${played.has(c)?'played':''}">${MIN_LAB(c)}${CAL[c]?`<small>${CAL[c]}</small>`:''}</th>`).join('')}`;
-  const minRows=names.map(n=>`<tr><td>${badge(n)}${h(n)}${admin&&rosterOf(n)?`<button type="button" class="rm no-print" data-n="${h(n)}" title="Retirer ${h(n)} de l’effectif" aria-label="Retirer ${h(n)} de l’effectif">×</button>`:''}</td><td class="d">${anneeOf(n)||'–'}</td>${MIN_COLS.map(c=>{const val=(MIN[n]||{})[c]; return edit?`<td class="mi${evCls(MINC,n,c)}"><input type="number" min="0" max="120" inputmode="numeric" data-p="${h(n)}" data-c="${c}" value="${val??''}" aria-label="${h(n)} ${MIN_LAB(c)}"${BRUSH?' readonly':''}></td>`:`<td class="${val?'':'d'}${evCls(MINC,n,c)}">${val||'–'}</td>`;}).join('')}<td class="pct">${minTot(n)||'–'}</td><td>${minMatchs(n)||'–'}</td></tr>`).join('');
+  const minHead=head.replace('<th>Né en</th>','<th>Né en</th><th>Poste</th><th>Poste 2</th>');
+  const minRows=names.map(n=>`<tr><td>${badge(n)}${h(n)}${admin&&rosterOf(n)?`<button type="button" class="rm no-print" data-n="${h(n)}" title="Retirer ${h(n)} de l’effectif" aria-label="Retirer ${h(n)} de l’effectif">×</button>`:''}</td><td class="d">${anneeOf(n)||'–'}</td>${admin&&rosterOf(n)?`<td class="pc">${pselHtml(n,'poste',posteOf(n))}</td><td class="pc">${pselHtml(n,'poste2',poste2Of(n))}</td>`:`<td class="${posteOf(n)?'':'d'}">${posteOf(n)||'–'}</td><td class="${poste2Of(n)?'':'d'}">${poste2Of(n)||'–'}</td>`}${MIN_COLS.map(c=>{const val=(MIN[n]||{})[c]; return edit?`<td class="mi${evCls(MINC,n,c)}"><input type="number" min="0" max="120" inputmode="numeric" data-p="${h(n)}" data-c="${c}" value="${val??''}" aria-label="${h(n)} ${MIN_LAB(c)}"${BRUSH?' readonly':''}></td>`:`<td class="${val?'':'d'}${evCls(MINC,n,c)}">${val||'–'}</td>`;}).join('')}<td class="pct">${minTot(n)||'–'}</td><td>${minMatchs(n)||'–'}</td></tr>`).join('');
   const tRows=names.filter(n=>T[n]).map(n=>{const tot=Object.values(T[n]).reduce((s,x)=>s+x,0), nm=Object.keys(T[n]).length, mt=minCoded(n);
     return `<tr><td>${badge(n)}${h(n)}</td><td class="d">${anneeOf(n)||'–'}</td>${MIN_COLS.map(c=>NON_CODE[c]?ncCell:`<td class="${T[n][c]?'':'d'}">${T[n][c]??'–'}</td>`).join('')}<td class="pct">${tot}</td><td>${(Math.round(tot/nm*10)/10).toString().replace('.',',')}</td><td class="pct">${mt?(Math.round(tot/mt*100)/100).toFixed(2).replace('.',','):'–'}</td></tr>`;}).join('');
   const teamCol=c=>Object.values(T).reduce((s,x)=>s+(x[c]||0),0);
@@ -1195,8 +1232,8 @@ function renderMinutes(){
   el.innerHTML=`<header class="mast"><img src="data:image/png;base64,${LOGO}" alt="Nissa Rugby"><div class="t"><div class="eyebrow">Nissa Rugby · Staff · Espoirs Accession</div><h1>Temps de jeu & tâches</h1><div class="meta">Saison 2026-2027 · J1 à J18 et phases finales</div></div></header>
   ${edit?evalBar():(DB?`<p class="evro no-print">${window.__RO_MSG||'Lecture seule : pour modifier les minutes et les couleurs, il faut un accès Contributeur ou Éditeur à cette page.'}</p>`:'')}
   <section class="sector" id="minutes"><div class="sec-title"><h2><svg class="hex" viewBox="0 0 16 18" aria-hidden="true"><polygon points="8,0 16,3.2 14.7,14 8,18 1.3,14 0,3.2" fill="var(--nissa)"/></svg>Minutes jouées</h2><span>${edit?'Saisie manuelle · enregistrement automatique':'Saisi par le staff'}</span></div>
-  <div class="card"><div class="tw"><table class="mtab"><thead>${head}<th>Total</th><th>Matchs</th></tr></thead><tbody>${minRows||`<tr><td colspan="${MIN_COLS.length+4}" class="d">Aucun joueur pour l’instant.</td></tr>`}</tbody></table></div>
-  ${admin?`<form id="addP" class="addp no-print"><h4>Ajouter un joueur à l’effectif</h4><div class="addp-f"><label for="apNom">Nom<input type="text" id="apNom" required></label><label for="apPre">Prénom<input type="text" id="apPre"></label><label for="apAn">Né en<input type="number" id="apAn" min="1990" max="2015" inputmode="numeric"></label><label for="apPo">Poste<select id="apPo"><option value="">–</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option></select></label><button type="submit">Ajouter</button></div><span class="msg" id="addState" aria-live="polite"></span></form>`:''}</div></section>
+  <div class="card"><div class="tw"><table class="mtab"><thead>${minHead}<th>Total</th><th>Matchs</th></tr></thead><tbody>${minRows||`<tr><td colspan="${MIN_COLS.length+6}" class="d">Aucun joueur pour l’instant.</td></tr>`}</tbody></table></div>
+  ${admin?`<form id="addP" class="addp no-print"><h4>Ajouter un joueur à l’effectif</h4><div class="addp-f"><label for="apNom">Nom<input type="text" id="apNom" required></label><label for="apPre">Prénom<input type="text" id="apPre"></label><label for="apAn">Né en<input type="number" id="apAn" min="1990" max="2015" inputmode="numeric"></label><label for="apPo">Poste<select id="apPo"><option value="">–</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option></select></label><label for="apPo2">Poste 2<select id="apPo2"><option value="">–</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option></select></label><button type="submit">Ajouter</button></div><span class="msg" id="addState" aria-live="polite"></span></form>`:''}</div></section>
   ${proSection(edit,admin)}
   <section class="sector" id="taches"><div class="sec-title"><h2><svg class="hex" viewBox="0 0 16 18" aria-hidden="true"><polygon points="8,0 16,3.2 14.7,14 8,18 1.3,14 0,3.2" fill="var(--nissa)"/></svg>Tâches par match</h2><span>Calculées automatiquement à partir des matchs importés</span></div>
   <div class="card"><p class="sub">Une tâche = une action codée en défense, ruck, attaque ou phase spécifique (fautes et points non comptés). Tâches/min = tâches divisées par les minutes jouées sur les matchs codés. J1 Vienne non codée (vidéo inexploitable) : ses minutes ne comptent pas dans ce calcul.</p><div class="tw"><table class="mtab"><thead>${head.replace(/(<th class="[^"]*">J1<small>[^<]*<\/small>)/,'$1<small class="nc">non codé</small>')}<th>Total</th><th>Moy./match</th><th>Tâches/min</th></tr></thead><tbody>${tRows}<tr style="border-top:2px solid var(--ink)"><td><b>Équipe</b></td><td></td>${MIN_COLS.map(c=>NON_CODE[c]?ncCell:`<td class="pct ${teamCol(c)?'':'d'}">${teamCol(c)||'–'}</td>`).join('')}<td class="pct">${teamTot}</td><td>${played.size?Math.round(teamTot/played.size):'–'}</td><td></td></tr></tbody></table></div></div></section>`;
@@ -1208,16 +1245,20 @@ function renderMinutes(){
       td.className='mi'+evCls(map,n,c); pro?savePro():saveMinutes(); }));
     bindPro(el);
     el.querySelectorAll('.mtab input[data-p]').forEach(inp=>inp.addEventListener('change',()=>{ const p=inp.dataset.p, c=inp.dataset.c; let x=inp.value===''?null:Math.max(0,Math.min(120,Math.round(+inp.value))); MIN[p]=MIN[p]||{}; if(x==null) delete MIN[p][c]; else MIN[p][c]=x; inp.value=x??''; saveMinutes();
-      const tr=inp.closest('tr'); tr.cells[MIN_COLS.length+2].textContent=minTot(p)||'–'; tr.cells[MIN_COLS.length+3].textContent=minMatchs(p)||'–'; }));
+      const tr=inp.closest('tr'); tr.cells[MIN_COLS.length+4].textContent=minTot(p)||'–'; tr.cells[MIN_COLS.length+5].textContent=minMatchs(p)||'–'; }));
     el.querySelectorAll('.mtab .rm[data-n]').forEach(btn=>btn.addEventListener('click',async()=>{
       if(!btn.classList.contains('armed')){ el.querySelectorAll('.mtab .rm.armed').forEach(b=>{b.classList.remove('armed');b.textContent='×';}); btn.classList.add('armed'); btn.textContent='Retirer ?'; setTimeout(()=>{ if(btn.isConnected){ btn.classList.remove('armed'); btn.textContent='×'; } },4000); return; }
       const n=btn.dataset.n, r=rosterOf(n); if(!r) return;
       const list=ROSTER.filter(x=>x!==r).map(({display,...x})=>x);
       try{ await DB.doc('effectif/saison').set({joueurs:list}); setRoster(list); if(MIN[n]||MINC[n]){ delete MIN[n]; delete MINC[n]; saveMinutes(); } renderMinutes(); const s2=$('addState'); if(s2){ s2.className='msg ok'; s2.textContent=n+' retiré de l’effectif.'; } }
       catch(err){ const s2=$('addState'); if(s2){ s2.className='msg err'; s2.textContent='Suppression impossible, réessaie.'; } } }));
+    el.querySelectorAll('select.psel').forEach(sel=>sel.addEventListener('change',async()=>{ const n=sel.dataset.n, k=sel.dataset.k, r=rosterOf(n); if(!r) return; const x=+sel.value||null;
+      const raw=ROSTER.map(q=>{ const {display,postes2,...rest}=q; const p2=rest.poste2||(Array.isArray(postes2)&&postes2[0])||null; const o={...rest,poste2:p2}; if(q===r) o[k]=x; if(o.poste2&&o.poste2===o.poste) o.poste2=null; return o; });
+      const st=$('addState'); try{ await DB.doc('effectif/saison').set({joueurs:raw}); setRoster(raw); renderMinutes(); const s2=$('addState'); if(s2){ s2.className='msg ok'; s2.textContent=`${n} : poste ${posteOf(n)||'–'}${poste2Of(n)?', poste 2 : '+poste2Of(n):''}.`; } }
+      catch(e){ if(st){ st.className='msg err'; st.textContent='Enregistrement impossible, réessaie.'; } } }));
     if($('addP')) $('addP').addEventListener('submit',async e=>{ e.preventDefault(); const nom=$('apNom').value.trim().toUpperCase(); if(!nom) return; const st=$('addState');
       if(ROSTER.some(r=>nkey(r.nom)===nkey(nom))){ st.className='msg err'; st.textContent='Ce joueur est déjà dans l’effectif.'; return; }
-      const j={nom,prenom:$('apPre').value.trim(),annee:+$('apAn').value||null,poste:+$('apPo').value||null};
+      const j={nom,prenom:$('apPre').value.trim(),annee:+$('apAn').value||null,poste:+$('apPo').value||null,poste2:(+$('apPo2').value&&+$('apPo2').value!==+$('apPo').value)?+$('apPo2').value:null};
       const list=[...ROSTER.map(({display,...r})=>r),j];
       try{ await DB.doc('effectif/saison').set({joueurs:list}); setRoster(list); renderMinutes(); const s2=$('addState'); if(s2){ s2.className='msg ok'; s2.textContent=titleName(nom)+' ajouté à l’effectif.'; } }
       catch(err){ st.className='msg err'; st.textContent='Ajout impossible, réessaie.'; } });
