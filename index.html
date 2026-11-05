@@ -393,7 +393,8 @@ footer{border-top:1px solid var(--line);padding-top:10px}
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),5000);
   }
   const ready=Promise.race([
-    fetch('donnees.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.matchs){ const seed=base; base=Object.assign({config:{}},j); for(const k in seed){ if(!base[k]||!Object.keys(base[k]).length) base[k]=seed[k]; } ['matchs','logos','config','temps','effectif','photos'].forEach(emit); } }).catch(()=>{}),
+    fetch('donnees.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.matchs){ const seed=base; base=Object.assign({config:{}},j); for(const k in seed){ if(!base[k]||!Object.keys(base[k]).length) base[k]=seed[k]; } ['matchs','logos','config','temps','effectif','photos'].forEach(emit); } }).catch(()=>{})
+      .then(()=>fetch('photos.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&typeof j==='object'){ base.photos=Object.assign({},j.photos||j,base.photos||{}); emit('photos'); } }).catch(()=>{})),
     new Promise(r=>setTimeout(r,4000))]);
   const ADMIN_KEY='nissa-admin';
   const sha=async t=>{ const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''); };
